@@ -1,0 +1,252 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniSpace</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .app-panel {
+            padding: 25px;
+            margin-top: 20px;
+            border-radius: 15px;
+            background: rgba(120, 150, 200, 0.15);
+        }
+
+        .app-panel button {
+            padding: 10px 18px;
+            margin: 10px 5px;
+            cursor: pointer;
+        }
+
+        #cameraVideo {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 12px;
+            background: #111;
+        }
+
+        body.dark-mode {
+            background: #101426;
+            color: white;
+        }
+
+        body.light-mode {
+            background: #f2f5ff;
+            color: #222;
+        }
+
+        .sphere {
+            width: 200px;
+            height: 200px;
+            margin: 30px auto;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%,
+                #8be9ff, #0878d1, #001b55);
+            box-shadow: 0 0 30px #00bfff;
+            animation: rotateSphere 6s linear infinite;
+        }
+
+        @keyframes rotateSphere {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body class="light-mode">
+
+<main class="desktop">
+
+    <h1>Welcome to OmniSpace</h1>
+    <p>Your Personal Digital Space</p>
+
+    <!-- Applications -->
+    <section class="section">
+        <h2>Applications</h2>
+
+        <div class="apps-grid">
+
+            <button class="app-card glass" id="filesBtn">
+                📁 My Files
+            </button>
+
+            <button class="app-card glass" id="spaceBtn">
+                🌐 3D Space
+            </button>
+
+            <button class="app-card glass" id="cameraBtn">
+                📷 AR Camera
+            </button>
+
+            <button class="app-card glass" id="settingsBtn">
+                ⚙️ Settings
+            </button>
+
+        </div>
+    </section>
+
+    <!-- My Files -->
+    <section id="filesPanel" class="app-panel" hidden>
+        <h2>My Files</h2>
+
+        <input type="file" id="fileInput" multiple>
+
+        <div id="fileList"></div>
+
+        <button class="closeBtn">Close</button>
+    </section>
+
+    <!-- 3D Space -->
+    <section id="space3D" class="app-panel" hidden>
+        <h2>Welcome to 3D Space</h2>
+
+        <div class="sphere"></div>
+
+        <button class="closeBtn">Close</button>
+    </section>
+
+    <!-- AR Camera -->
+    <section id="cameraPanel" class="app-panel" hidden>
+        <h2>AR Camera</h2>
+
+        <video id="cameraVideo" autoplay playsinline muted></video>
+
+        <p id="cameraStatus">Press Start Camera to begin.</p>
+
+        <button id="startCamera">Start Camera</button>
+        <button id="stopCamera">Stop Camera</button>
+        <button class="closeBtn">Close</button>
+    </section>
+
+    <!-- Settings -->
+    <section id="settingsPanel" class="app-panel" hidden>
+        <h2>Settings</h2>
+
+        <label>
+            <input type="checkbox" id="darkMode">
+            Enable Dark Mode
+        </label>
+
+        <p>Change the appearance of your OmniSpace website.</p>
+
+        <button class="closeBtn">Close</button>
+    </section>
+
+</main>
+
+<script>
+    // Get application panels
+    const panels = [
+        "filesPanel",
+        "space3D",
+        "cameraPanel",
+        "settingsPanel"
+    ];
+
+    function openPanel(panelId) {
+        panels.forEach(id => {
+            document.getElementById(id).hidden = true;
+        });
+
+        document.getElementById(panelId).hidden = false;
+    }
+
+    // Application buttons
+    document.getElementById("filesBtn").addEventListener("click", () => {
+        openPanel("filesPanel");
+    });
+
+    document.getElementById("spaceBtn").addEventListener("click", () => {
+        openPanel("space3D");
+    });
+
+    document.getElementById("cameraBtn").addEventListener("click", () => {
+        openPanel("cameraPanel");
+    });
+
+    document.getElementById("settingsBtn").addEventListener("click", () => {
+        openPanel("settingsPanel");
+    });
+
+    // Close buttons
+    document.querySelectorAll(".closeBtn").forEach(button => {
+        button.addEventListener("click", () => {
+            button.closest(".app-panel").hidden = true;
+
+            if (button.closest("#cameraPanel")) {
+                stopCamera();
+            }
+        });
+    });
+
+    // My Files
+    const fileInput = document.getElementById("fileInput");
+    const fileList = document.getElementById("fileList");
+
+    fileInput.addEventListener("change", () => {
+        fileList.innerHTML = "";
+
+        Array.from(fileInput.files).forEach(file => {
+            const item = document.createElement("p");
+            item.textContent = "📄 " + file.name;
+            fileList.appendChild(item);
+        });
+    });
+
+    // AR Camera
+    const video = document.getElementById("cameraVideo");
+    const cameraStatus = document.getElementById("cameraStatus");
+
+    let cameraStream = null;
+
+    async function startCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            cameraStatus.textContent =
+                "Camera is unavailable. Open this site using localhost or HTTPS.";
+            return;
+        }
+
+        try {
+            stopCamera();
+
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            });
+
+            video.srcObject = cameraStream;
+            cameraStatus.textContent = "Camera connected. Live preview is active.";
+
+        } catch (error) {
+            cameraStatus.textContent =
+                "Camera error: " + error.message +
+                ". Please allow camera permission in your browser.";
+        }
+    }
+
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+
+        video.srcObject = null;
+        cameraStatus.textContent = "Camera stopped.";
+    }
+
+    document.getElementById("startCamera").addEventListener("click", startCamera);
+    document.getElementById("stopCamera").addEventListener("click", stopCamera);
+
+    // Settings: Dark Mode
+    document.getElementById("darkMode").addEventListener("change", event => {
+        document.body.classList.toggle("dark-mode", event.target.checked);
+        document.body.classList.toggle("light-mode", !event.target.checked);
+    });
+
+</script>
+
+</body>
+</html>
